@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   icons: {
-    icon: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/thomm.png",
+    apple: "/thomm.png",
   },
 };
 

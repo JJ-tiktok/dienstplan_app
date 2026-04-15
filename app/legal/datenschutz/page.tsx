@@ -4,10 +4,8 @@ export default function DatenschutzPage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Datenschutzinformation</h1>
         <p>
-          Diese Hinweise gelten für die Nutzung der Dienstplan-App (Termine,
-          Buchung von Diensten, E-Mail-Benachrichtigungen). Den
-          datenschutzrechtlich Verantwortlichen und die konkreten
-          Kontaktdaten trägt der jeweilige Betreiber ein (siehe Impressum).
+          Diese Hinweise gelten für die Nutzung des Veranstaltungsplaners Thomm (Termine,
+          Buchung von Diensten, E-Mail-Benachrichtigungen).
         </p>
       </div>
 
@@ -16,15 +14,20 @@ export default function DatenschutzPage() {
           1. Datenschutzrechtlich Verantwortlicher
         </h2>
         <p>
-          Verantwortlich ist der Betreiber der Anwendung (siehe Impressum).
+          Verantwortlich: Ortsbürgermeister Mario Weber, Haus der Gemeinde
+          (ehem. Pfarrhaus), Trierer Straße 1, 54317 Thomm.
+          <br />
+          Telefon: 06500 999 3 444 oder 06500 910 313
+          <br />
+          Sprechstunde: Mo. 18:00 bis 19:00 Uhr oder nach Vereinbarung
+          <br />
           Datenschutzanfragen richten Sie bitte an:{" "}
           <a
-            href="mailto:datenschutz@beispiel.de"
+            href="mailto:ortsbuergermeister@thomm-online.de"
             className="text-blue-600 hover:underline"
           >
-            datenschutz@beispiel.de
-          </a>{" "}
-          (Platzhalter – durch die reale Adresse ersetzen).
+            ortsbuergermeister@thomm-online.de
+          </a>
         </p>
       </section>
 
@@ -95,12 +98,11 @@ export default function DatenschutzPage() {
           Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie
           Widerspruch, soweit anwendbar. Kontakt:{" "}
           <a
-            href="mailto:datenschutz@beispiel.de"
+            href="mailto:ortsbuergermeister@thomm-online.de"
             className="text-blue-600 hover:underline"
           >
-            datenschutz@beispiel.de
-          </a>{" "}
-          (Platzhalter).
+            ortsbuergermeister@thomm-online.de
+          </a>
         </p>
         <p>
           Sie haben zudem das Recht, sich bei einer Aufsichtsbehörde zu

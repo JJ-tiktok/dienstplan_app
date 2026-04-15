@@ -1,8 +1,8 @@
-import type { EventUiProfile, Match } from '@/types';
+import type { EventCategory, EventUiProfile, Match } from '@/types';
 
 /** Supabase `.select()` für Match inkl. Kategorie-Embed. */
 export const MATCH_WITH_CATEGORY_SELECT =
-  '*, event_categories ( id, name, slug, ui_profile, sort_order )';
+  '*, event_categories ( id, name, slug, ui_profile, sort_order, color )';
 
 export function getEventUiProfile(match: Match): EventUiProfile {
   const p = match.event_categories?.ui_profile;
@@ -12,6 +12,14 @@ export function getEventUiProfile(match: Match): EventUiProfile {
 
 export function isSportMatch(match: Match): boolean {
   return getEventUiProfile(match) === 'sport';
+}
+
+export function getCategoryColor(match: Match): string {
+  const color = match.event_categories?.color?.trim();
+  if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) {
+    return color.toUpperCase();
+  }
+  return isSportMatch(match) ? '#2563EB' : '#64748B';
 }
 
 /** Label für das opponent-Feld (nur UI). */
@@ -36,5 +44,20 @@ export function getMatchPublicTitle(match: Match): string {
 /** Kurzbeschreibung für Kalender-Beschreibung o.ä. */
 export function getMatchCalendarSummaryLine(match: Match): string {
   const title = getMatchPublicTitle(match);
-  return `Dienstplan: ${title}`;
+  return `Veranstaltungsplaner Thomm: ${title}`;
+}
+
+export function hydrateMatchesWithCategories(
+  matches: Match[],
+  categories: EventCategory[]
+): Match[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  return matches.map((match) => {
+    if (match.event_categories) return match;
+    if (!match.event_category_id) return match;
+    return {
+      ...match,
+      event_categories: byId.get(match.event_category_id) ?? null,
+    };
+  });
 }

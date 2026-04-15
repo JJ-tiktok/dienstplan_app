@@ -6,7 +6,7 @@ import { Calendar, MapPin } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Match } from '@/types';
 import { getMatchDisplayDate } from '@/lib/utils';
-import { getMatchPublicTitle, isSportMatch } from '@/lib/match-display';
+import { getCategoryColor, getMatchPublicTitle, isSportMatch } from '@/lib/match-display';
 
 interface MatchHeroProps {
   match: Match;
@@ -19,10 +19,12 @@ interface MatchHeroProps {
  * Large highlighted card for the next upcoming match
  */
 export default function MatchHero({ match, openCount, progress }: MatchHeroProps) {
+  const categoryColor = getCategoryColor(match);
+
   return (
     <section>
       <div className="flex justify-between items-end mb-4">
-        <h2 className="text-lg font-bold text-slate-800">Als nächstes</h2>
+        <h2 className="text-lg font-bold text-slate-800">Als Nächstes geplant</h2>
       </div>
 
       <Link href={`/match/${match.id}`}>
@@ -31,10 +33,7 @@ export default function MatchHero({ match, openCount, progress }: MatchHeroProps
           whileTap={{ scale: 0.98 }}
           className="relative overflow-hidden bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-slate-100"
         >
-          <div className={clsx(
-            "absolute top-0 left-0 w-full h-2",
-            openCount === 0 ? "bg-emerald-500" : "bg-gradient-to-r from-blue-600 to-indigo-600"
-          )} />
+          <div className="absolute top-0 left-0 w-full h-2" style={{ backgroundColor: categoryColor }} />
 
           <div className="p-6">
             <div className="flex justify-between items-start mb-6">
@@ -54,8 +53,11 @@ export default function MatchHero({ match, openCount, progress }: MatchHeroProps
               <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner border border-slate-100">
                 {isSportMatch(match) ? '⚽️' : '📅'}
               </div>
-              {!isSportMatch(match) && match.event_categories?.name && (
-                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full mb-2 border border-slate-200">
+              {match.event_categories?.name && (
+                <span
+                  className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full mb-2 border"
+                  style={{ borderColor: categoryColor }}
+                >
                   {match.event_categories.name}
                 </span>
               )}
@@ -69,7 +71,7 @@ export default function MatchHero({ match, openCount, progress }: MatchHeroProps
 
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
               <div className="flex justify-between text-sm mb-2 font-semibold">
-                <span className="text-slate-600">Dienstplan Status</span>
+                <span className="text-slate-600">Veranstaltungsplaner-Status</span>
                 <span className={clsx(
                   openCount === 0 ? "text-emerald-600" : "text-blue-600"
                 )}>

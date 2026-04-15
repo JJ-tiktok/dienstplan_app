@@ -6,6 +6,7 @@ export interface EventCategory {
   slug: string;
   ui_profile: EventUiProfile;
   sort_order: number;
+  color: string;
 }
 
 export interface Match {

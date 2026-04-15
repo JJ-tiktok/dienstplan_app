@@ -2,17 +2,17 @@
  * Zentrale, kundenneutrale Bezeichnungen für die App.
  */
 
-export const APP_NAME = 'Dienstplan App';
-export const APP_NAME_SHORT = 'Dienstplan';
+export const APP_NAME = 'Veranstaltungsplaner Thomm';
+export const APP_NAME_SHORT = 'Veranstaltungsplaner Thomm';
 
 /** Für <title>, Alt-Texte, Kalender PRODID */
 export const SITE_TITLE = APP_NAME;
 
 /** Kurzbeschreibung für Meta-Tags (SEO, Freigabe-Vorschau) */
 export const SITE_DESCRIPTION =
-  'Termine einplanen, Dienste vergeben und Helfer per E-Mail informieren — eine flexible Dienstplan-App für Vereine und Teams.';
+  'Termine einplanen, Dienste vergeben und Helfer per E-Mail informieren — der Veranstaltungsplaner Thomm für Vereine und Teams.';
 
-/** Einheitliche Title-Struktur für Unterseiten: „Seite | Dienstplan App“ */
+/** Einheitliche Title-Struktur für Unterseiten: „Seite | Veranstaltungsplaner Thomm“ */
 export const SITE_TITLE_TEMPLATE = `%s | ${APP_NAME}`;
 
 /**
@@ -29,4 +29,4 @@ export function getMailFrom(): string {
 }
 
 /** Domain-ähnlicher Suffix für iCalendar-UIDs (kein echtes E-Mail-Postfach nötig) */
-export const ICAL_UID_DOMAIN = 'dienstplan.local';
+export const ICAL_UID_DOMAIN = 'veranstaltungsplaner-thomm.local';

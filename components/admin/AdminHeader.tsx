@@ -4,6 +4,7 @@ import { Calendar, Settings, LogOut, History, AlertCircle, Trash2 } from 'lucide
 import { clsx } from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { APP_NAME } from '@/lib/branding';
 
 interface AdminHeaderProps {
   activeTab: 'upcoming' | 'past' | 'settings' | 'cancellations' | 'trash';
@@ -28,7 +29,7 @@ export default function AdminHeader({ activeTab, onTabChange, cancellationCount 
     <header className="bg-slate-900 text-white pt-12 pb-6 px-6 rounded-b-[2.5rem] shadow-xl shadow-slate-900/20 mb-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="Dienstplan App" className="h-8 w-8 object-contain brightness-0 invert" />
+          <img src="/logo.svg" alt={APP_NAME} className="h-8 w-8 object-contain brightness-0 invert" />
           <h1 className="text-2xl font-black">Admin Cockpit</h1>
         </div>
         <button 

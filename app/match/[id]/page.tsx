@@ -3,11 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Match, SlotPublic, ServiceType, ServiceTypeMember } from '@/types';
+import { EventCategory, Match, SlotPublic, ServiceType, ServiceTypeMember } from '@/types';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Clock, Download } from 'lucide-react';
 import { formatDisplayDate, downloadICalendar, getMatchDisplayDate } from '@/lib/utils';
-import { MATCH_WITH_CATEGORY_SELECT, isSportMatch } from '@/lib/match-display';
+import {
+  hydrateMatchesWithCategories,
+  MATCH_WITH_CATEGORY_SELECT,
+  isSportMatch,
+} from '@/lib/match-display';
 import SlotList from '@/components/match/SlotList';
 import SignUpModal from '@/components/match/SignUpModal';
 import CancellationModal from '@/components/match/CancellationModal';
@@ -44,18 +48,25 @@ export default function MatchDetail() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: matchData } = await supabase
-        .from('matches')
-        .select(MATCH_WITH_CATEGORY_SELECT)
-        .eq('id', matchId)
-        .is('deleted_at', null)
-        .single();
+      const [matchRes, categoriesRes] = await Promise.all([
+        supabase
+          .from('matches')
+          .select(MATCH_WITH_CATEGORY_SELECT)
+          .eq('id', matchId)
+          .is('deleted_at', null)
+          .single(),
+        supabase.from('event_categories').select('*'),
+      ]);
+      const matchData = matchRes.data;
       if (!matchData) {
         setMatch(null);
         setLoading(false);
         return;
       }
-      setMatch(matchData as Match);
+      const categories = (categoriesRes.data as EventCategory[] | null | undefined) ?? [];
+      const hydratedMatch =
+        hydrateMatchesWithCategories([matchData as Match], categories)[0] ?? (matchData as Match);
+      setMatch(hydratedMatch);
       
       const { data: slotsData } = await supabase.from('slots_public').select('*').eq('match_id', matchId).order('id');
       if (slotsData) setSlots(slotsData);
@@ -244,7 +255,7 @@ export default function MatchDetail() {
            animate={{ opacity: 1, scale: 1 }}
            className="w-20 h-20 bg-white rounded-[2rem] shadow-xl shadow-blue-900/10 flex items-center justify-center mb-6 border border-white/50 overflow-hidden p-2"
         >
-          <img src="/logo.svg" alt="Dienstplan App" className="h-full w-full object-contain" />
+          <img src="/thomm.png" alt="SV Thomm Wappen" className="h-full w-full object-contain" />
         </motion.div>
         
         <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">

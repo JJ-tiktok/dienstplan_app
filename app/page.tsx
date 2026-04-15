@@ -2,14 +2,19 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Match, SlotPublic } from '@/types';
+import { EventCategory, Match, SlotPublic } from '@/types';
 import NextLink from 'next/link';
 import { Calendar, Shield, Lock, History, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import { getMatchDateForComparison, downloadICalendar } from '@/lib/utils';
-import { MATCH_WITH_CATEGORY_SELECT } from '@/lib/match-display';
+import {
+  getCategoryColor,
+  hydrateMatchesWithCategories,
+  MATCH_WITH_CATEGORY_SELECT,
+} from '@/lib/match-display';
 import MatchHero from '@/components/dashboard/MatchHero';
 import MatchList from '@/components/dashboard/MatchList';
+import { APP_NAME } from '@/lib/branding';
 
 type TabType = 'upcoming' | 'past';
 
@@ -21,16 +26,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const [mRes, sRes] = await Promise.all([
+      const [mRes, sRes, cRes] = await Promise.all([
         supabase
           .from('matches')
           .select(MATCH_WITH_CATEGORY_SELECT)
           .is('deleted_at', null)
           .order('id'),
-        supabase.from('slots_public').select('*')
+        supabase.from('slots_public').select('*'),
+        supabase.from('event_categories').select('*').order('sort_order', { ascending: true }),
       ]);
       
-      if (mRes.data) setMatches(mRes.data as Match[]);
+      if (mRes.data) {
+        const normalizedCategories = (cRes.data as EventCategory[] | null | undefined) ?? [];
+        setMatches(hydrateMatchesWithCategories(mRes.data as Match[], normalizedCategories));
+      }
       if (sRes.data) setSlots(sRes.data);
       setLoading(false);
     };
@@ -52,7 +61,7 @@ export default function Dashboard() {
     return Math.round((filled / total) * 100);
   };
 
-  // Filtere Spiele basierend auf Tab
+  // Filtere Veranstaltungen basierend auf Tab
   const { upcomingMatches, pastMatches, openCounts } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -80,7 +89,7 @@ export default function Dashboard() {
       }
     });
     
-    // Sortiere kommende Spiele aufsteigend (nächstes zuerst)
+    // Sortiere kommende Veranstaltungen aufsteigend (nächstes zuerst)
     upcoming.sort((a, b) => {
       const dateA = getMatchDateForComparison(a.match_date, a.date);
       const dateB = getMatchDateForComparison(b.match_date, b.date);
@@ -88,7 +97,7 @@ export default function Dashboard() {
       return dateA.getTime() - dateB.getTime();
     });
     
-    // Sortiere vergangene Spiele absteigend (neuestes zuerst)
+    // Sortiere vergangene Veranstaltungen absteigend (neuestes zuerst)
     past.sort((a, b) => {
       const dateA = getMatchDateForComparison(a.match_date, a.date);
       const dateB = getMatchDateForComparison(b.match_date, b.date);
@@ -102,6 +111,22 @@ export default function Dashboard() {
   const displayedMatches = activeTab === 'upcoming' ? upcomingMatches : pastMatches;
   const nextMatch = activeTab === 'upcoming' ? upcomingMatches[0] : null;
   const listMatches = activeTab === 'upcoming' ? upcomingMatches.slice(1) : pastMatches;
+  const categoryLegendItems = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string; sort_order: number; color: string }>();
+    matches.forEach((match) => {
+      const category = match.event_categories;
+      if (!category) return;
+      if (!byId.has(category.id)) {
+        byId.set(category.id, {
+          id: category.id,
+          name: category.name,
+          sort_order: category.sort_order,
+          color: getCategoryColor(match),
+        });
+      }
+    });
+    return Array.from(byId.values()).sort((a, b) => a.sort_order - b.sort_order);
+  }, [matches]);
 
   if (loading) return (
     <div className="max-w-md mx-auto p-6 space-y-8 bg-slate-50 min-h-screen">
@@ -121,7 +146,7 @@ export default function Dashboard() {
         <div className="max-w-md mx-auto flex justify-between items-center">
           <div>
             <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">Willkommen zurück</p>
-            <h1 className="text-xl font-bold text-slate-900">Dienstplan App</h1>
+            <h1 className="text-xl font-bold text-slate-900">{APP_NAME}</h1>
           </div>
           <div className="flex items-center gap-2">
             <NextLink
@@ -132,7 +157,7 @@ export default function Dashboard() {
               <Lock className="w-4 h-4" />
             </NextLink>
             <NextLink href="/" className="h-10 w-10 flex items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-white shadow-sm" aria-label="Startseite">
-              <img src="/logo.svg" alt="Dienstplan App" className="h-8 w-8 object-contain" />
+              <img src="/thomm.png" alt="SV Thomm Wappen" className="h-8 w-8 object-contain" />
             </NextLink>
           </div>
         </div>
@@ -175,19 +200,43 @@ export default function Dashboard() {
               onClick={() => {
                 const matchesToExport = activeTab === 'upcoming' ? upcomingMatches : pastMatches;
                 const filename = activeTab === 'upcoming' 
-                  ? 'dienstplan-aktuelle-termine.ics'
-                  : 'dienstplan-vergangene-termine.ics';
+                  ? 'dienstplan-aktuelle-veranstaltungen.ics'
+                  : 'dienstplan-vergangene-veranstaltungen.ics';
                 downloadICalendar(matchesToExport, filename);
               }}
               className="w-full py-3 px-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center gap-2 text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors active:scale-[0.98]"
             >
               <Download className="w-4 h-4" />
-              {activeTab === 'upcoming' ? 'Aktuelle Spiele exportieren' : 'Vergangene Spiele exportieren'}
+              {activeTab === 'upcoming'
+                ? 'Aktuelle Veranstaltungen exportieren'
+                : 'Vergangene Veranstaltungen exportieren'}
             </button>
+          )}
+
+          {categoryLegendItems.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">
+                Kategorien
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {categoryLegendItems.map((item) => (
+                  <span
+                    key={item.id}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-50 px-2 py-1 rounded-full border border-slate-200"
+                  >
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
-        {/* HERO SECTION - Nur für kommende Spiele */}
+        {/* HERO SECTION - Nur für kommende Veranstaltungen */}
         {nextMatch && activeTab === 'upcoming' && (
           <MatchHero 
             match={nextMatch}
@@ -201,7 +250,7 @@ export default function Dashboard() {
           matches={listMatches}
           openCounts={openCounts}
           isPast={activeTab === 'past'}
-          title={activeTab === 'upcoming' ? 'Kommende Spiele' : 'Vergangene Spiele'}
+          title={activeTab === 'upcoming' ? 'Kommende Veranstaltungen' : 'Vergangene Veranstaltungen'}
         />
 
         {/* FEATURE_HALL_OF_FAME: HallOfFame bei Bedarf wieder aktivieren */}

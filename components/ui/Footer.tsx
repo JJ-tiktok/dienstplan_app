@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { APP_NAME } from "@/lib/branding";
 
 export default function Footer() {
   return (
     <footer className="mt-auto py-4 text-center text-xs text-slate-400">
       <div className="flex flex-col items-center gap-3">
-        <img src="/logo.svg" alt="Dienstplan App" className="h-8 w-8 object-contain opacity-60" />
+        <img src="/logo.svg" alt={APP_NAME} className="h-8 w-8 object-contain opacity-60" />
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <span>© {new Date().getFullYear()} Dienstplan App</span>
+          <span>© {new Date().getFullYear()} {APP_NAME}</span>
           <span className="text-slate-300">•</span>
           <Link href="/legal/impressum" className="hover:text-blue-600">
             Impressum

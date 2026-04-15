@@ -13,6 +13,7 @@ import {
   EventUiProfile,
 } from '@/types';
 import {
+  hydrateMatchesWithCategories,
   MATCH_WITH_CATEGORY_SELECT,
   isSportMatch,
 } from '@/lib/match-display';
@@ -116,8 +117,23 @@ export default function AdminPage() {
         supabase.from('service_type_members').select('*').order('order', { ascending: true }),
         fetchAdminSlots()
       ]);
-      if (mRes.data) setMatches(mRes.data as Match[]);
-      if (catRes.data) setEventCategories(catRes.data as EventCategory[]);
+      if (catRes.data) {
+        const normalizedCategories = (catRes.data as EventCategory[]).map((category) => ({
+          ...category,
+          color:
+            typeof category.color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(category.color)
+              ? category.color.toUpperCase()
+              : '#64748B',
+        }));
+        setEventCategories(normalizedCategories);
+        if (mRes.data) {
+          setMatches(
+            hydrateMatchesWithCategories(mRes.data as Match[], normalizedCategories)
+          );
+        }
+      } else if (mRes.data) {
+        setMatches(mRes.data as Match[]);
+      }
       if (sRes.data) setServiceTypes(sRes.data);
       if (membersRes.data) setServiceTypeMembers(membersRes.data);
       setAllSlots(slotsData);
@@ -725,6 +741,8 @@ export default function AdminPage() {
   const [newEventCategoryName, setNewEventCategoryName] = useState('');
   const [newEventCategoryProfile, setNewEventCategoryProfile] =
     useState<EventUiProfile>('sport');
+  const [newEventCategoryColor, setNewEventCategoryColor] = useState('#2563EB');
+  const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value.trim());
   const addServiceType = async () => {
     if(!newServiceInput) return;
     await supabase.from('service_types').insert([{ name: newServiceInput, default_count: 1 }]);
@@ -761,31 +779,134 @@ export default function AdminPage() {
   const addEventCategory = async () => {
     const name = newEventCategoryName.trim();
     if (!name) return;
+    if (!isHexColor(newEventCategoryColor)) {
+      setAlertDialog({
+        isOpen: true,
+        title: 'Ungültige Farbe',
+        message: 'Bitte eine gültige Hex-Farbe wie #2563EB angeben.',
+        variant: 'error',
+      });
+      return;
+    }
     const slugSet = new Set(eventCategories.map((c) => c.slug));
     const slug = buildEventCategorySlug(name, slugSet);
+    const payload = {
+      name,
+      slug,
+      ui_profile: newEventCategoryProfile,
+      color: newEventCategoryColor.trim().toUpperCase(),
+      sort_order: eventCategories.length,
+    };
+
     const { error } = await supabase.from('event_categories').insert([
-      {
-        name,
-        slug,
-        ui_profile: newEventCategoryProfile,
-        sort_order: eventCategories.length,
-      },
+      payload,
     ]);
+    if (error && error.code === '42703') {
+      // Fallback für Instanzen, auf denen die color-Migration noch nicht ausgeführt wurde.
+      const fallbackInsert = await supabase.from('event_categories').insert([
+        {
+          name,
+          slug,
+          ui_profile: newEventCategoryProfile,
+          sort_order: eventCategories.length,
+        },
+      ]);
+      if (fallbackInsert.error) {
+        setAlertDialog({
+          isOpen: true,
+          title: 'Fehler',
+          message: fallbackInsert.error.message || 'Kategorie konnte nicht angelegt werden.',
+          variant: 'error',
+        });
+        return;
+      }
+      setAlertDialog({
+        isOpen: true,
+        title: 'Kategorie angelegt',
+        message:
+          'Die Kategorie wurde angelegt. Bitte führe die Migration für Kategorien-Farben aus, damit Farben gespeichert werden.',
+        variant: 'info',
+      });
+      setNewEventCategoryName('');
+      setNewEventCategoryProfile('sport');
+      setNewEventCategoryColor('#2563EB');
+      loadData();
+      return;
+    }
     if (error) {
+      const permissionHint =
+        error.code === '42501' || /permission denied/i.test(error.message || '');
       setAlertDialog({
         isOpen: true,
         title: 'Fehler',
-        message: error.message || 'Kategorie konnte nicht angelegt werden.',
+        message: permissionHint
+          ? 'Kategorie konnte nicht angelegt werden: Datenbankrechte für event_categories fehlen. Bitte die neue Migration für Sequence-Grants ausführen.'
+          : error.message || 'Kategorie konnte nicht angelegt werden.',
         variant: 'error',
       });
       return;
     }
     setNewEventCategoryName('');
     setNewEventCategoryProfile('sport');
+    setNewEventCategoryColor('#2563EB');
     loadData();
   };
 
+  const updateEventCategoryColor = async (id: number, color: string) => {
+    if (!isHexColor(color)) {
+      setAlertDialog({
+        isOpen: true,
+        title: 'Ungültige Farbe',
+        message: 'Bitte eine gültige Hex-Farbe wie #2563EB angeben.',
+        variant: 'error',
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('event_categories')
+      .update({ color: color.trim().toUpperCase() })
+      .eq('id', id);
+    if (error) {
+      if (error.code === '42703') {
+        setAlertDialog({
+          isOpen: true,
+          title: 'Migration fehlt',
+          message:
+            'Die Farbspalte existiert noch nicht in der Datenbank. Bitte zuerst die Migration ausführen.',
+          variant: 'error',
+        });
+        return;
+      }
+      setAlertDialog({
+        isOpen: true,
+        title: 'Fehler',
+        message: error.message || 'Farbe konnte nicht gespeichert werden.',
+        variant: 'error',
+      });
+      return;
+    }
+    await loadData();
+  };
+
+  const updateEventCategoryProfile = async (id: number, profile: EventUiProfile) => {
+    const { error } = await supabase
+      .from('event_categories')
+      .update({ ui_profile: profile })
+      .eq('id', id);
+    if (error) {
+      setAlertDialog({
+        isOpen: true,
+        title: 'Fehler',
+        message: error.message || 'Profil konnte nicht gespeichert werden.',
+        variant: 'error',
+      });
+      return;
+    }
+    await loadData();
+  };
+
   const deleteEventCategory = async (id: number) => {
+    const category = eventCategories.find((item) => item.id === id);
     const { count, error: countError } = await supabase
       .from('matches')
       .select('*', { count: 'exact', head: true })
@@ -803,8 +924,7 @@ export default function AdminPage() {
       setAlertDialog({
         isOpen: true,
         title: 'Nicht löschbar',
-        message:
-          'Diese Kategorie wird noch von Terminen verwendet. Bitte zuerst zuweisen oder Termine umstellen.',
+        message: `Diese Kategorie wird noch von ${count} Termin(en) verwendet. Bitte zuerst Termine auf eine andere Kategorie umstellen.`,
         variant: 'error',
       });
       return;
@@ -812,7 +932,7 @@ export default function AdminPage() {
     setConfirmDialog({
       isOpen: true,
       title: 'Event-Kategorie löschen',
-      message: 'Kategorie wirklich löschen?',
+      message: `Kategorie "${category?.name || id}" wirklich löschen?`,
       variant: 'danger',
       onConfirm: async () => {
         const { error } = await supabase.from('event_categories').delete().eq('id', id);
@@ -1155,10 +1275,14 @@ export default function AdminPage() {
               categories={eventCategories}
               newName={newEventCategoryName}
               newProfile={newEventCategoryProfile}
+              newColor={newEventCategoryColor}
               onNewNameChange={setNewEventCategoryName}
               onNewProfileChange={setNewEventCategoryProfile}
+              onNewColorChange={setNewEventCategoryColor}
               onAdd={addEventCategory}
               onDelete={deleteEventCategory}
+              onUpdateColor={updateEventCategoryColor}
+              onUpdateProfile={updateEventCategoryProfile}
             />
             <ServiceTypeManager
               serviceTypes={serviceTypes}

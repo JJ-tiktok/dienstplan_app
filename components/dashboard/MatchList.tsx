@@ -6,7 +6,7 @@ import { ChevronRight, MapPin } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Match } from '@/types';
 import { getDateParts, getMatchDisplayDate } from '@/lib/utils';
-import { getMatchPublicTitle, isSportMatch } from '@/lib/match-display';
+import { getCategoryColor, getMatchPublicTitle } from '@/lib/match-display';
 
 interface MatchListProps {
   matches: Match[];
@@ -41,6 +41,7 @@ export default function MatchList({ matches, openCounts, isPast = false, title }
           const displayDate = getMatchDisplayDate(match.match_date, match.date);
           const dateParts = getDateParts(displayDate);
           const openCount = openCounts[match.id] || 0;
+          const categoryColor = getCategoryColor(match);
           
           return (
             <Link key={match.id} href={`/match/${match.id}`}>
@@ -54,6 +55,7 @@ export default function MatchList({ matches, openCounts, isPast = false, title }
                     ? "bg-slate-50/50 border-slate-100/50 opacity-75"
                     : "bg-white border-slate-100"
                 )}
+                style={{ borderLeft: `4px solid ${categoryColor}` }}
               >
                 <div className="flex items-center gap-4">
                   <div className={clsx(
@@ -76,8 +78,12 @@ export default function MatchList({ matches, openCounts, isPast = false, title }
                       )}>
                         {getMatchPublicTitle(match)}
                       </h4>
-                      {!isSportMatch(match) && match.event_categories?.name && (
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                      {match.event_categories?.name && (
+                        <span
+                          className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+                          style={{ borderColor: categoryColor }}
+                        >
+                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: categoryColor }} />
                           {match.event_categories.name}
                         </span>
                       )}

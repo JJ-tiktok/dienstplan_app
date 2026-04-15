@@ -299,7 +299,7 @@ export const generateICalendar = (matches: Match[]): string => {
 
   let ics = 'BEGIN:VCALENDAR\r\n';
   ics += 'VERSION:2.0\r\n';
-  ics += `PRODID:-//${APP_NAME_SHORT}//Dienstplan//DE\r\n`;
+  ics += `PRODID:-//${APP_NAME_SHORT}//Veranstaltungsplaner-Thomm//DE\r\n`;
   ics += 'CALSCALE:GREGORIAN\r\n';
   ics += 'METHOD:PUBLISH\r\n';
 
