@@ -32,8 +32,11 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   icons: {
-    icon: [{ url: "/thomm.png", type: "image/png" }],
-    shortcut: "/thomm.png",
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/thomm.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
     apple: [{ url: "/thomm.png", type: "image/png" }],
   },
 };
