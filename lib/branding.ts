@@ -32,12 +32,20 @@ export function getMailFrom(): string {
 export const ICAL_UID_DOMAIN = 'veranstaltungsplaner-thomm.local';
 
 /**
- * Öffentliche Basis-URL der App, z. B. für Links in E-Mails.
+ * Öffentliche Basis-URL der App für Links in E-Mails.
+ *
+ * Gibt bewusst null zurück, wenn keine Basis-URL konfiguriert ist: ein relativer
+ * Pfad wäre in einer E-Mail ein toter Link, weil Mail-Clients keine Basis haben,
+ * gegen die sie auflösen könnten. Aufrufer lassen den Link dann lieber ganz weg.
+ *
  * .env: NEXT_PUBLIC_SITE_URL (bevorzugt, auch für Metadata genutzt) oder GASTRO_PUBLIC_URL
  */
-export function getAppUrl(path: string = ''): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || process.env.GASTRO_PUBLIC_URL || '').replace(/\/$/, '');
-  if (!path) return base || '/';
+export function getAppUrl(path: string = ''): string | null {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || process.env.GASTRO_PUBLIC_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!base) return null;
+  if (!path) return base;
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return base ? `${base}${normalizedPath}` : normalizedPath;
+  return `${base}${normalizedPath}`;
 }

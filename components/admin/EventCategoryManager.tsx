@@ -207,7 +207,7 @@ export default function EventCategoryManager({
 }
 
 export function buildEventCategorySlug(name: string, existingSlugs: Set<string>): string {
-  let s = slugify(name);
+  const s = slugify(name);
   if (!existingSlugs.has(s)) return s;
   let n = 2;
   while (existingSlugs.has(`${s}-${n}`)) n += 1;

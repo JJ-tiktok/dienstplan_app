@@ -30,6 +30,17 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import AlertDialog from '@/components/ui/AlertDialog';
 import { adminRemoveUser } from '@/app/actions';
 
+/** Entwurfs-Konfiguration der anzulegenden Dienste, pro Dienstart-Name. */
+type NewSlotConfig = {
+  [category: string]: {
+    count: number;
+    time: string;
+    startTime?: string;
+    endTime?: string;
+    durationMinutes?: number | null;
+  };
+};
+
 export default function AdminPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -54,7 +65,7 @@ export default function AdminPage() {
     event_category_id: 0,
   });
   const [editorSlots, setEditorSlots] = useState<Slot[]>([]); 
-  const [newSlotConfig, setNewSlotConfig] = useState<{ [key: string]: { count: number; time: string; startTime?: string; endTime?: string; durationMinutes?: number | null } }>({});
+  const [newSlotConfig, setNewSlotConfig] = useState<NewSlotConfig>({});
   const [adminAction, setAdminAction] = useState<{ slotId: number | null; type: 'confirm' | 'reject' | null }>({
     slotId: null,
     type: null,
@@ -313,7 +324,7 @@ export default function AdminPage() {
     }
     
     // Config Reset
-    const initialConfig: any = {};
+    const initialConfig: NewSlotConfig = {};
     serviceTypes.forEach(t => { 
       initialConfig[t.name] = { 
         count: t.default_count || 1, 

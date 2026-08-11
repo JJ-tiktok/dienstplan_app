@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 import { getMatchDateForComparison, getMatchDisplayDate } from '@/lib/utils';
 import { getMatchPublicTitle, MATCH_WITH_CATEGORY_SELECT } from '@/lib/match-display';
 import type { Match } from '@/types';
-import { isValidEmail } from '@/lib/email';
+import { escapeHtml, isValidEmail } from '@/lib/email';
 import { APP_NAME_SHORT, getMailFrom } from '@/lib/branding';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -12,24 +12,23 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 /**
  * Cron Job API Route for sending reminder emails
  * Should be triggered by Vercel Cron or similar
- * 
- * Security: Check for Authorization header or query secret
+ *
+ * Security: fail-closed. Ohne gesetztes CRON_SECRET antwortet die Route mit 401,
+ * statt ungeprüft zu laufen – sonst könnte jeder per GET Massen-Mails auslösen.
+ * Vercel Cron schickt den Authorization-Header automatisch, sobald CRON_SECRET
+ * in den Environment Variables steht.
  */
 export async function GET(request: NextRequest) {
   try {
-    // Security: Check for authorization
-    const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    const querySecret = request.nextUrl.searchParams.get('secret');
+    if (!cronSecret) {
+      console.error('[Cron Reminders] CRON_SECRET ist nicht gesetzt. Route wird aus Sicherheitsgründen abgewiesen.');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Allow if:
-    // 1. Authorization header matches CRON_SECRET (Vercel Cron)
-    // 2. Query param secret matches CRON_SECRET (manual trigger for testing)
-    // 3. No CRON_SECRET is set (development only - remove in production!)
-    if (cronSecret) {
-      if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const today = new Date();
@@ -70,11 +69,6 @@ export async function GET(request: NextRequest) {
       // Check if match date equals target date (2 days from now)
       return matchDateOnly.getTime() === targetDate.getTime();
     });
-
-    if (matchesError) {
-      console.error('Error fetching matches:', matchesError);
-      return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
-    }
 
     if (!matches || matches.length === 0) {
       return NextResponse.json({
@@ -133,31 +127,31 @@ export async function GET(request: NextRequest) {
             subject: `Erinnerung: Dein Dienst (${APP_NAME_SHORT}) ist übermorgen!`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #1e293b; margin-bottom: 20px;">Hallo ${slot.user_name},</h1>
+                <h1 style="color: #1e293b; margin-bottom: 20px;">Hallo ${escapeHtml(slot.user_name)},</h1>
                 <p style="color: #475569; line-height: 1.6; margin-bottom: 20px;">
                   freundliche Erinnerung: Dein Dienst ist <strong>übermorgen</strong>!
                 </p>
                 <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px;">
                   <p style="margin: 0 0 10px 0; font-weight: bold; color: #1e293b; font-size: 18px;">
-                    ${slot.category}
+                    ${escapeHtml(slot.category)}
                   </p>
                   <p style="margin: 5px 0; color: #475569;">
-                    <strong>Termin:</strong> ${matchTitle}
+                    <strong>Termin:</strong> ${escapeHtml(matchTitle)}
                   </p>
                   <p style="margin: 5px 0; color: #475569;">
-                    <strong>Datum:</strong> ${formattedDate} (übermorgen)
+                    <strong>Datum:</strong> ${escapeHtml(formattedDate)} (übermorgen)
                   </p>
                   <p style="margin: 5px 0; color: #475569;">
-                    <strong>Uhrzeit:</strong> ${slot.time}
+                    <strong>Uhrzeit:</strong> ${escapeHtml(slot.time)}
                   </p>
-                  ${match.location ? `<p style="margin: 5px 0; color: #475569;"><strong>Ort:</strong> ${match.location}</p>` : ''}
+                  ${match.location ? `<p style="margin: 5px 0; color: #475569;"><strong>Ort:</strong> ${escapeHtml(match.location)}</p>` : ''}
                 </div>
                 <p style="color: #475569; line-height: 1.6;">
                   Bitte sei pünktlich vor Ort. Wir freuen uns auf deinen Einsatz! 🏆
                 </p>
                 <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
                   Mit sportlichen Grüßen,<br>
-                  ${APP_NAME_SHORT}
+                  ${escapeHtml(APP_NAME_SHORT)}
                 </p>
               </div>
             `,

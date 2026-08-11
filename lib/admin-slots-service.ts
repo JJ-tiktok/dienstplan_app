@@ -1,4 +1,5 @@
 import { adminSupabase } from '@/lib/supabase-admin';
+import type { Slot } from '@/types';
 
 type ServiceResult<T> = {
   data: T | null;
@@ -28,7 +29,7 @@ const deriveDuration = (time: string) => {
   return diff > 0 ? diff : null;
 };
 
-export async function listSlots(matchId?: number): Promise<ServiceResult<any[]>> {
+export async function listSlots(matchId?: number): Promise<ServiceResult<Slot[]>> {
   let query = adminSupabase.from('slots').select('*').order('id');
   if (matchId) {
     query = query.eq('match_id', matchId);
@@ -47,7 +48,7 @@ export async function createSlot(input: {
   category: unknown;
   time: unknown;
   duration_minutes?: unknown;
-}): Promise<ServiceResult<any>> {
+}): Promise<ServiceResult<Slot>> {
   const matchId = Number(input.match_id);
   const category = String(input.category || '').trim();
   const time = String(input.time || '').trim();
@@ -91,7 +92,7 @@ export async function updateSlot(input: {
   category?: unknown;
   time?: unknown;
   duration_minutes?: unknown;
-}): Promise<ServiceResult<any>> {
+}): Promise<ServiceResult<Slot>> {
   const slotId = Number(input.id);
   if (!slotId) {
     return { data: null, error: 'id fehlt' };

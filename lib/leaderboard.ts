@@ -40,13 +40,19 @@ export async function getLeaderboardByDateRange(startDate: Date, endDate: Date, 
 
   const rows = new Map<string, LeaderboardRow & { _lastMatch?: Date }>();
 
-  data?.forEach((row: any) => {
-    const helperId = row.helper_id as string | null;
-    const duration = row.duration_minutes as number | null;
+  type LeaderboardSlotRow = {
+    helper_id: string | null;
+    duration_minutes: number | null;
+    /** Supabase liefert das Embed je nach Beziehung als Objekt oder als Array. */
+    match?: { match_date?: string | null; date?: string | null } | null;
+  };
+
+  (data as unknown as LeaderboardSlotRow[] | null)?.forEach((row) => {
+    const helperId = row.helper_id;
+    const duration = row.duration_minutes;
     const matchDate = getMatchDateForComparison(row.match?.match_date, row.match?.date);
 
     if (!helperId || !duration || duration <= 0 || !matchDate) return;
-    if (!matchDate) return;
     if (matchDate < startDate || matchDate > endDate) return;
 
     const existing = rows.get(helperId);
