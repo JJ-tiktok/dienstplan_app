@@ -65,7 +65,8 @@ async function sendConfirmationForSlot(
       matchTitle,
       formattedDate,
       slot.time,
-      match.location
+      match.location,
+      slot.match_id ?? match.id
     );
     return { sent: true };
   } catch (err) {
@@ -195,7 +196,8 @@ export async function bookSlot(
           matchTitle,
           formattedDate,
           slot.time,
-          match.location
+          match.location,
+          slot.match_id ?? match.id
         );
         emailSent = true;
       } catch (err) {

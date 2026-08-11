@@ -30,3 +30,14 @@ export function getMailFrom(): string {
 
 /** Domain-ähnlicher Suffix für iCalendar-UIDs (kein echtes E-Mail-Postfach nötig) */
 export const ICAL_UID_DOMAIN = 'veranstaltungsplaner-thomm.local';
+
+/**
+ * Öffentliche Basis-URL der App, z. B. für Links in E-Mails.
+ * .env: NEXT_PUBLIC_SITE_URL (bevorzugt, auch für Metadata genutzt) oder GASTRO_PUBLIC_URL
+ */
+export function getAppUrl(path: string = ''): string {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || process.env.GASTRO_PUBLIC_URL || '').replace(/\/$/, '');
+  if (!path) return base || '/';
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return base ? `${base}${normalizedPath}` : normalizedPath;
+}

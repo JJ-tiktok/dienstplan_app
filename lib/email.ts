@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { APP_NAME, APP_NAME_SHORT, getMailFrom } from '@/lib/branding';
+import { APP_NAME, APP_NAME_SHORT, getAppUrl, getMailFrom } from '@/lib/branding';
 
 /**
  * Resend client – Key zur Laufzeit lesen, damit Env in Server Actions/Vercel sicher ankommt
@@ -22,10 +22,12 @@ export function getConfirmationEmailHTML(
   matchTitle: string,
   date: string,
   time: string,
-  location?: string
+  location?: string,
+  matchId?: number | string
 ): string {
   const adminEmail = process.env.ADMIN_EMAIL || 'den Administratoren';
-  
+  const appUrl = getAppUrl(matchId != null ? `/match/${matchId}` : '');
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h1 style="color: #1e293b; margin-bottom: 20px;">Hallo ${name},</h1>
@@ -50,6 +52,14 @@ export function getConfirmationEmailHTML(
       <p style="color: #475569; line-height: 1.6;">
         Wir freuen uns auf deinen Einsatz! 🏆
       </p>
+      <div style="margin: 30px 0; text-align: center;">
+        <a
+          href="${appUrl}"
+          style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;"
+        >
+          Zur Dienstplan-App
+        </a>
+      </div>
       <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
         Mit sportlichen Grüßen,<br>
         ${APP_NAME_SHORT}
@@ -117,19 +127,22 @@ export async function sendConfirmationEmail(
   matchTitle: string,
   date: string,
   time: string,
-  location?: string
+  location?: string,
+  matchId?: number | string
 ): Promise<void> {
   const resend = getResend();
   if (!resend) {
     throw new Error('RESEND_API_KEY fehlt oder ist leer. E-Mails werden nicht versendet.');
   }
 
+  const appUrl = getAppUrl(matchId != null ? `/match/${matchId}` : '');
+
   try {
     const { error } = await resend.emails.send({
       from: getMailFrom(),
       to,
       subject: `Bestätigung: Dein Dienst — ${APP_NAME_SHORT}`,
-      html: getConfirmationEmailHTML(name, service, matchTitle, date, time, location),
+      html: getConfirmationEmailHTML(name, service, matchTitle, date, time, location, matchId),
       text: `
 Hallo ${name},
 
@@ -141,6 +154,8 @@ Uhrzeit: ${time}
 ${location ? `Ort: ${location}` : ''}
 
 Wir freuen uns auf deinen Einsatz! 🏆
+
+Zur Dienstplan-App: ${appUrl}
 
 Mit sportlichen Grüßen,
 ${APP_NAME_SHORT}
