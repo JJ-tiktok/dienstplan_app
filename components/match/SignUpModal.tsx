@@ -49,6 +49,9 @@ export default function SignUpModal({
   const normalizedEmail = inputContact.trim().toLowerCase();
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
   const isNameValid = normalizedName.length >= 2;
+  // Fehler erst zeigen, wenn erkennbar fertig getippt wurde – nicht beim ersten Buchstaben
+  const showEmailError =
+    normalizedEmail.length > 0 && !isEmailValid && (normalizedEmail.includes('@') || normalizedEmail.length > 5);
 
   return (
     <AnimatePresence>
@@ -106,6 +109,8 @@ export default function SignUpModal({
                   type="text" 
                   autoFocus
                   placeholder="Vorname Nachname"
+                  autoComplete="name"
+                  maxLength={80}
                   value={inputName}
                   onChange={e => onNameChange(e.target.value)}
                   className="relative w-full p-3 bg-transparent border-none outline-none text-lg font-bold text-slate-900 placeholder:text-slate-400"
@@ -122,11 +127,19 @@ export default function SignUpModal({
                 type="email" 
                 autoComplete="email"
                 placeholder="deine@email.de"
+                maxLength={254}
                 value={inputContact}
                 onChange={e => onContactChange(e.target.value)}
+                aria-invalid={showEmailError}
+                aria-describedby={showEmailError ? 'signup-email-error' : undefined}
                 className="relative w-full p-3 bg-transparent border-none outline-none text-lg font-medium text-slate-900 placeholder:text-slate-400"
               />
             </LiquidContainer>
+            {showEmailError && (
+              <p id="signup-email-error" role="alert" className="-mt-2 px-3 text-xs font-medium text-red-600">
+                Bitte eine gültige E-Mail-Adresse eingeben, z. B. name@beispiel.de
+              </p>
+            )}
 
             <div className="flex items-start gap-2 px-1">
               <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />

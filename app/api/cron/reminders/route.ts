@@ -7,8 +7,6 @@ import type { Match } from '@/types';
 import { escapeHtml, isValidEmail } from '@/lib/email';
 import { APP_NAME_SHORT, getMailFrom } from '@/lib/branding';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 /**
  * Cron Job API Route for sending reminder emails
  * Should be triggered by Vercel Cron or similar
@@ -30,6 +28,15 @@ export async function GET(request: NextRequest) {
     if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Client erst hier erzeugen: auf Modulebene würde ein fehlender Key den
+    // kompletten Build abbrechen (Resend wirft schon im Konstruktor).
+    const resendKey = process.env.RESEND_API_KEY?.trim();
+    if (!resendKey) {
+      console.error('[Cron Reminders] RESEND_API_KEY fehlt. E-Mails werden nicht versendet.');
+      return NextResponse.json({ error: 'RESEND_API_KEY nicht gesetzt' }, { status: 500 });
+    }
+    const resend = new Resend(resendKey);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -116,11 +123,6 @@ export async function GET(request: NextRequest) {
         const matchTitle = getMatchPublicTitle(match as Match);
 
         try {
-          if (!process.env.RESEND_API_KEY?.trim()) {
-            console.error('[Cron Reminders] RESEND_API_KEY fehlt. E-Mails werden nicht versendet.');
-            errors.push(`Match ${match.id}: RESEND_API_KEY nicht gesetzt`);
-            continue;
-          }
           const { error } = await resend.emails.send({
             from: getMailFrom(),
             to: slot.user_contact,
