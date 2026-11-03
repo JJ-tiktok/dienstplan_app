@@ -49,3 +49,12 @@ export function getAppUrl(path: string = ''): string | null {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;
 }
+
+/**
+ * Basis-URL für Stellen, die zwingend eine absolute URL brauchen (metadataBase,
+ * robots.txt, sitemap.xml, Open-Graph-Bilder). Fällt lokal auf localhost zurück.
+ * Für E-Mails stattdessen getAppUrl() nutzen, das ohne Konfiguration null liefert.
+ */
+export function getSiteUrl(): string {
+  return getAppUrl() ?? 'http://localhost:3000';
+}

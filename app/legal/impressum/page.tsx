@@ -1,15 +1,22 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Impressum",
+  description: "Anbieterkennzeichnung des Veranstaltungsplaners Thomm.",
+};
+
 export default function ImpressumPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Impressum</h1>
         <p className="text-slate-600">
-          Angaben gemäß § 5 TMG und Verantwortlichkeit für den Inhalt nach § 55 Abs. 2 RStV.
+          Angaben gemäß § 5 DDG und Verantwortlichkeit für den Inhalt nach § 18 Abs. 2 MStV.
         </p>
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Angaben gemäß § 5 TMG</h2>
+        <h2 className="text-lg font-semibold">Angaben gemäß § 5 DDG</h2>
         <p>
           Ortsbürgermeister Mario Weber
           <br />
@@ -21,7 +28,7 @@ export default function ImpressumPage() {
 
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">
-          Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
+          Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
         </h2>
         <p>Ortsbürgermeister Mario Weber</p>
       </section>

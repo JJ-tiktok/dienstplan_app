@@ -8,12 +8,11 @@ import {
   APP_NAME,
   SITE_DESCRIPTION,
   SITE_TITLE_TEMPLATE,
+  getSiteUrl,
 } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-  ),
+  metadataBase: new URL(getSiteUrl()),
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
@@ -25,9 +24,10 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     title: APP_NAME,
     description: SITE_DESCRIPTION,
+    locale: "de_DE",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: APP_NAME,
     description: SITE_DESCRIPTION,
   },
