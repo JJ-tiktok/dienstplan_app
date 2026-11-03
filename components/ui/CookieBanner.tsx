@@ -29,8 +29,8 @@ export default function CookieBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 p-4 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-col gap-3 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <p>
-          Wir verwenden nur technisch notwendige Cookies, um den Betrieb der
-          Seite zu gewährleisten.{" "}
+          Wir setzen keine Tracking-Cookies. Für Reichweite und Ladezeiten
+          nutzen wir eine anonyme Messung ohne Cookies.{" "}
           <Link
             href="/legal/datenschutz"
             className="font-medium text-blue-600 hover:underline"

@@ -1,0 +1,30 @@
+name: Site-Audit
+
+# Wöchentliche Prüfung von Code, Abhängigkeiten und Live-Seite (siehe docs/AUDIT.md).
+# Schlägt fehl, sobald ein Pflichtpunkt verletzt ist – GitHub schickt dann eine Mail.
+on:
+  schedule:
+    - cron: "17 6 * * 1" # montags 06:17 UTC
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit (Code, Abhängigkeiten, Live-Seite)
+        # SITE_URL als Repository-Variable setzen (Settings → Variables → Actions),
+        # dann wird zusätzlich die Produktivseite geprüft.
+        run: npm run audit:site -- ${{ vars.SITE_URL }}
+      - run: npx tsc --noEmit

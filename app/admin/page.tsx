@@ -28,7 +28,6 @@ import ServiceTypeManager from '@/components/admin/ServiceTypeManager';
 import StatusBadge from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import AlertDialog from '@/components/ui/AlertDialog';
-import { adminRemoveUser } from '@/app/actions';
 
 /** Entwurfs-Konfiguration der anzulegenden Dienste, pro Dienstart-Name. */
 type NewSlotConfig = {
@@ -515,7 +514,7 @@ export default function AdminPage() {
   };
 
   const deleteSlot = async (slotId: number, userName: string | null) => {
-    // If slot has a user, use adminRemoveUser (which sends email)
+    // If slot has a user, remove via the protected admin route (which sends email)
     if (userName) {
       setConfirmDialog({
         isOpen: true,
@@ -523,7 +522,11 @@ export default function AdminPage() {
         message: `Nutzer informieren und austragen?\n\n${userName} wird per E-Mail benachrichtigt.`,
         variant: 'danger',
         onConfirm: async () => {
-          const result = await adminRemoveUser(slotId);
+          const result = await fetchAdmin<null>('/api/admin/slots/remove-user', { slotId })
+            .catch((err: unknown) => ({
+              success: false,
+              error: err instanceof Error ? err.message : undefined,
+            }));
           if (result.success) {
             // Reload slots for this match
             await reloadEditorSlots();

@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { getMatchDisplayDate } from '@/lib/utils';
 import {
   sendConfirmationEmail,
-  sendCancellationEmail,
   sendAdminCancellationNotification,
   isValidEmail,
 } from '@/lib/email';
@@ -23,6 +22,10 @@ interface ActionResult {
 
 const normalizeName = (name: string) => name.trim();
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+/** Obergrenzen gegen Müll-Eingaben in DB und Mails (RFC 5321: E-Mail max. 254 Zeichen). */
+const MAX_NAME_LENGTH = 80;
+const MAX_EMAIL_LENGTH = 254;
 
 /**
  * Slot + Match laden und Bestätigungs-Mail versenden (für normale Buchung und für „bereits eingetragen“).
@@ -90,6 +93,14 @@ export async function bookSlot(
     // Validate inputs
     if (!normalizedName || normalizedName.length < 2) {
       return { success: false, error: 'Name muss mindestens 2 Zeichen lang sein' };
+    }
+
+    if (normalizedName.length > MAX_NAME_LENGTH) {
+      return { success: false, error: `Name darf höchstens ${MAX_NAME_LENGTH} Zeichen lang sein` };
+    }
+
+    if (normalizedEmail.length > MAX_EMAIL_LENGTH) {
+      return { success: false, error: 'E-Mail-Adresse ist zu lang' };
     }
 
     if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
@@ -305,211 +316,9 @@ export async function requestCancellation(slotId: number, email: string): Promis
   }
 }
 
-/**
- * Server Action: Admin bestätigt Austragung
- * Entfernt Nutzer, setzt cancellation_requested=false
- */
-export async function adminConfirmCancellation(slotId: number): Promise<ActionResult> {
-  try {
-    // Fetch slot with match information to get user contact and match details
-    const { data: slot, error: slotError } = await supabaseServer
-      .from('slots')
-      .select(`
-        *,
-        match:matches(${MATCH_WITH_CATEGORY_SELECT})
-      `)
-      .eq('id', slotId)
-      .single();
-
-    if (slotError || !slot) {
-      return { success: false, error: 'Slot nicht gefunden' };
-    }
-
-    if (!slot.user_name && !slot.user_contact) {
-      return { success: false, error: 'Dieser Slot ist nicht belegt' };
-    }
-
-    if (!slot.cancellation_requested) {
-      return { success: false, error: 'Keine offene Austragungsanfrage' };
-    }
-
-    // Store user info before deletion for email
-    const userName = slot.user_name || 'Helfer';
-    const userContact = slot.user_contact ? normalizeEmail(slot.user_contact) : null;
-    const match = slot.match as Match | null | undefined;
-
-    // Update slot: remove user and reset cancellation flag
-    const { data: updatedSlots, error: updateError } = await supabaseServer
-      .from('slots')
-      .update({
-        user_name: null,
-        user_contact: null,
-        cancellation_requested: false,
-      })
-      .eq('id', slotId)
-      .eq('cancellation_requested', true)
-      .select('id');
-
-    if (updateError) {
-      return { success: false, error: 'Fehler beim Entfernen. Bitte erneut versuchen.' };
-    }
-
-    if (!updatedSlots || updatedSlots.length === 0) {
-      return { success: false, error: 'Die Anfrage wurde bereits bearbeitet' };
-    }
-
-    // Send cancellation email if contact is a valid email
-    if (match && userContact && isValidEmail(userContact)) {
-      try {
-        const formattedDate = getMatchDisplayDate(match.match_date, match.date);
-        const matchTitle = getMatchPublicTitle(match);
-
-        await sendCancellationEmail(
-          userContact,
-          userName,
-          slot.category,
-          matchTitle,
-          formattedDate
-        );
-      } catch (emailError) {
-        // Log email error but don't fail the removal
-        console.error('Failed to send cancellation email:', emailError);
-        // Continue - the removal was successful even if email fails
-      }
-    }
-
-    // Revalidate paths
-    revalidatePath(`/match/${match?.id ?? slot.match_id}`);
-    revalidatePath('/admin');
-    revalidatePath('/'); // Also revalidate homepage
-
-    return { success: true };
-  } catch (error) {
-    console.error('Admin confirm cancellation error:', error);
-    return { success: false, error: 'Ein unerwarteter Fehler ist aufgetreten' };
-  }
-}
-
-/**
- * Server Action: Admin lehnt Austragung ab
- * Setzt cancellation_requested=false, behält Nutzer
- */
-export async function adminRejectCancellation(slotId: number): Promise<ActionResult> {
-  try {
-    const { data: slot, error: slotError } = await supabaseServer
-      .from('slots')
-      .select('id, match_id, cancellation_requested')
-      .eq('id', slotId)
-      .single();
-
-    if (slotError || !slot) {
-      return { success: false, error: 'Slot nicht gefunden' };
-    }
-
-    if (!slot.cancellation_requested) {
-      return { success: false, error: 'Keine offene Austragungsanfrage' };
-    }
-
-    const { data: updatedSlots, error: updateError } = await supabaseServer
-      .from('slots')
-      .update({ cancellation_requested: false })
-      .eq('id', slotId)
-      .eq('cancellation_requested', true)
-      .select('id');
-
-    if (updateError) {
-      return { success: false, error: 'Fehler beim Aktualisieren. Bitte erneut versuchen.' };
-    }
-
-    if (!updatedSlots || updatedSlots.length === 0) {
-      return { success: false, error: 'Die Anfrage wurde bereits bearbeitet' };
-    }
-
-    revalidatePath(`/match/${slot.match_id}`);
-    revalidatePath('/admin');
-    revalidatePath('/');
-
-    return { success: true };
-  } catch (error) {
-    console.error('Admin reject cancellation error:', error);
-    return { success: false, error: 'Ein unerwarteter Fehler ist aufgetreten' };
-  }
-}
-
-/**
- * Server Action: Admin removes user from slot
- * Fetches slot data, removes user, sends cancellation email, and revalidates
- */
-export async function adminRemoveUser(slotId: number): Promise<ActionResult> {
-  try {
-    // Fetch slot with match information to get user contact and match details
-    const { data: slot, error: slotError } = await supabaseServer
-      .from('slots')
-      .select(`
-        *,
-        match:matches(${MATCH_WITH_CATEGORY_SELECT})
-      `)
-      .eq('id', slotId)
-      .single();
-
-    if (slotError || !slot) {
-      return { success: false, error: 'Slot nicht gefunden' };
-    }
-
-    if (!slot.user_name) {
-      return { success: false, error: 'Dieser Slot ist nicht belegt' };
-    }
-
-    // Store user info before deletion for email
-    const userName = slot.user_name || 'Helfer';
-    const userContact = slot.user_contact ? normalizeEmail(slot.user_contact) : null;
-    const match = slot.match as Match | null | undefined;
-
-    // Update slot: remove user and reset cancellation flag
-    const { error: updateError } = await supabaseServer
-      .from('slots')
-      .update({
-        user_name: null,
-        user_contact: null,
-        cancellation_requested: false,
-      })
-      .eq('id', slotId);
-
-    if (updateError) {
-      return { success: false, error: 'Fehler beim Entfernen. Bitte erneut versuchen.' };
-    }
-
-    // Send cancellation email if contact is a valid email
-    if (match && userContact && isValidEmail(userContact)) {
-      try {
-        const formattedDate = getMatchDisplayDate(match.match_date, match.date);
-        const matchTitle = getMatchPublicTitle(match);
-
-        await sendCancellationEmail(
-          userContact,
-          userName,
-          slot.category,
-          matchTitle,
-          formattedDate
-        );
-      } catch (emailError) {
-        // Log email error but don't fail the removal
-        console.error('Failed to send cancellation email:', emailError);
-        // Continue - the removal was successful even if email fails
-      }
-    }
-
-    // Revalidate paths
-    revalidatePath(`/match/${match?.id ?? slot.match_id}`);
-    revalidatePath('/admin');
-    revalidatePath('/'); // Also revalidate homepage
-
-    return { success: true };
-  } catch (error) {
-    console.error('Admin remove user error:', error);
-    return { success: false, error: 'Ein unerwarteter Fehler ist aufgetreten' };
-  }
-}
+// Admin-Aktionen (Austragen, Stornierung bestätigen/ablehnen) liegen bewusst NICHT
+// hier: Server Actions sind öffentliche Endpunkte ohne Auth. Sie laufen über die
+// per requireAdmin geschützten Routen unter app/api/admin/slots/*.
 
 // Smoke-Test-Plan:
 // 1) Public list loads via slots_public

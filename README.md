@@ -23,7 +23,12 @@ Weitere Skripte:
 npm run build   # Produktions-Build
 npm run lint    # ESLint
 npx tsc --noEmit  # Typecheck
+npm run audit:site [-- https://domain]  # Launch- und Sicherheits-Checkliste
 ```
+
+Die Checkliste, offene Punkte und das Prüfprotokoll stehen in
+[`docs/AUDIT.md`](docs/AUDIT.md). Ein GitHub-Workflow führt den Audit wöchentlich
+aus; Dependabot meldet Sicherheitsupdates der Abhängigkeiten.
 
 ## Environment-Variablen
 
