@@ -29,7 +29,8 @@ export default async function Icon() {
         <img
           src={`data:image/png;base64,${iconBase64}`}
           alt="Veranstaltungsplaner Thomm"
-          width={32}
+          // Wappen ist hochformatig (500×621) – Seitenverhältnis erhalten statt stauchen
+          width={26}
           height={32}
         />
       </div>

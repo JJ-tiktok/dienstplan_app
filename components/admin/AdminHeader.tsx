@@ -29,7 +29,9 @@ export default function AdminHeader({ activeTab, onTabChange, cancellationCount 
     <header className="bg-slate-900 text-white pt-12 pb-6 px-6 rounded-b-[2.5rem] shadow-xl shadow-slate-900/20 mb-8">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt={APP_NAME} className="h-8 w-8 object-contain brightness-0 invert" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
+            <img src="/thomm.png" alt={APP_NAME} className="h-8 w-8 object-contain" />
+          </span>
           <h1 className="text-2xl font-black">Admin Cockpit</h1>
         </div>
         <button 
