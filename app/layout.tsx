@@ -31,14 +31,9 @@ export const metadata: Metadata = {
     title: APP_NAME,
     description: SITE_DESCRIPTION,
   },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
-      { url: "/thomm.png", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: [{ url: "/thomm.png", type: "image/png" }],
-  },
+  // Icons kommen über Dateikonventionen: app/favicon.ico, app/icon.tsx und
+  // app/apple-icon.tsx (alle mit Wappen). Kein eigener icons-Block hier –
+  // der würde die automatisch erzeugten Links überschreiben.
 };
 
 export default function RootLayout({
