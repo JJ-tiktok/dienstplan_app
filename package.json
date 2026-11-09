@@ -10,16 +10,16 @@
     "audit:site": "node scripts/site-audit.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.86.2",
+    "@supabase/supabase-js": "^2.119.0",
     "@vercel/analytics": "^1.6.1",
-    "@vercel/speed-insights": "^2.0.0",
+    "@vercel/speed-insights": "^2.1.0",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.556.0",
-    "next": "^16.2.2",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "next": "^16.4.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "resend": "^6.7.0"
   },
   "devDependencies": {
@@ -28,7 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
